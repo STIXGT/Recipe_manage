@@ -1,5 +1,5 @@
 
----
+## 📚 Proyecto de Gestion de Recetas
 
 ## ⚙️ Configuración y Ejecución
 
@@ -107,7 +107,7 @@ Puedes revisar o modificar los modelos en:
 
 - Stiven Guanoquiza  
 - Estudiante de Ingeniería de Software  
-- GitHub: [@tu_usuario](https://github.com/tu_usuario)
+- GitHub: [@STIXGT](https://github.com/STIXGT)
 
 ---
 
