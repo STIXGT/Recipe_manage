@@ -1,0 +1,216 @@
+---
+// 1. Interfaz simplificada
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// Datos iniciales (pueden venir de una API o base de datos)
+const initialUsers: User[] = [];
+---
+
+<div id="users-manager" class="bg-white rounded-lg shadow p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold">Gestión de Usuarios</h2>
+    <button
+      id="new-user-btn"
+      type="button"
+      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    >
+      Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- Formulario -->
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h3 id="form-title" class="text-lg font-semibold mb-4">Nuevo Usuario</h3>
+    <form id="user-form">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Nombre</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-6">
+        <button
+          id="cancel-btn"
+          type="button"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded mr-2"
+        >
+          Cancelar
+        </button>
+        <button
+          id="submit-btn"
+          type="submit"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Crear Usuario
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-white rounded-lg shadow">
+    <table class="min-w-full">
+      <thead>
+        <tr>
+          <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+          <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+          <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+        </tr>   
+      </thead>
+      <tbody id="users-table-body" class="bg-white">
+        <!-- Las filas se insertarán aquí con JS -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+<script define:vars={{ initialUsers }}>
+    // Estado de la aplicación
+    async function fetchUsers() {
+      const users = await fetch('http://localhost:3000/api/users').then(res => res.json());
+      return users;
+    }
+    let editingUserId = null;
+    // Elementos del DOM
+    const form = document.getElementById('user-form');
+    const formTitle = document.getElementById('form-title');
+    const tableBody = document.getElementById('users-table-body');
+    const newUserBtn = document.getElementById('new-user-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    
+    async function renderTable() {
+      let users = await fetchUsers();
+      console.log("usuarios test", users);
+
+      tableBody.innerHTML = '';
+      users.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.id}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.name}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.email}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+            <button type="button" data-edit-id="${user.id}" class="text-indigo-600 hover:text-indigo-900">Editar</button>
+            <button type="button" data-delete-id="${user.id}" class="text-red-600 hover:text-red-900">Eliminar</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+  
+     function resetForm() {
+      form.reset();
+      editingUserId = null;
+      formTitle.textContent = 'Nuevo Usuario';
+      submitBtn.textContent = 'Crear Usuario';
+    }
+  
+    async function handleEdit(id) {
+      console.log("id test en editar", id);
+
+      const users = await fetchUsers();
+      const userFound = users.find(r => r.id === id);
+
+      console.log("usuario test en editar", userFound);
+      if (!userFound) return;
+  
+      editingUserId = id;
+      console.log("Id usuario encontrado", userFound);
+      nameInput.value = userFound.name;
+      emailInput.value = userFound.email;      
+      formTitle.textContent = 'Editar Usuario';
+      submitBtn.textContent = 'Guardar Cambios';
+    }
+  
+    // Event Listeners
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = nameInput.value;
+      const email = emailInput.value;
+  
+      if (!name || !email) {
+        alert('Por favor, completa todos los campos.');
+        return;
+      }
+  
+      if (editingUserId) {
+        // Actualizar
+        const response = await fetch(`http://localhost:3000/api/users/${editingUserId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, email })
+        }); 
+        resetForm();
+        renderTable();
+      } else {
+        // Crear
+        const data = {
+          name,
+          email
+        };
+        const response = await fetch('http://localhost:3000/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        const newUser = await response.json();
+        resetForm();
+        renderTable();
+      } 
+    });
+  
+    tableBody.addEventListener('click', async (e) => {
+      const target = e.target;
+      if (target.dataset.editId) {
+        handleEdit(parseInt(target.dataset.editId, 10));
+      }
+      if (target.dataset.deleteId) {
+        if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+          const idToDelete = parseInt(target.dataset.deleteId, 10);
+          const response = await fetch(`http://localhost:3000/api/users/${idToDelete}`, {
+            method: 'DELETE'
+          });
+          resetForm();
+          renderTable();
+        }
+      }
+    });
+  
+    newUserBtn.addEventListener('click', resetForm);
+    cancelBtn.addEventListener('click', resetForm);
+  
+    // Renderizado inicial
+    renderTable();
+  </script>
+  
